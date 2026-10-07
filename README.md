@@ -165,19 +165,3 @@ Swagger is served at `/swagger` in every environment.
 
 ---
 
-**Legacy configuration (deprecated)**
-
-The old instructions below described putting the connection string directly in
-`appsettings.json`. Use the environment variables above instead.
-
----
-
-**Configuration & Setup**
-
-1. **Database Connection:** Update `appsettings.json` with your NeonDB connection string:
-   ```json
-   {
-     "ConnectionStrings": {
-       "NeonDBConnection": "Server=YOUR_HOST;Database=YOUR_DB;User Id=YOUR_USER;Password=YOUR_PASSWORD;SSL Mode=Require;"
-     }
-   }
