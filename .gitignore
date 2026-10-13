@@ -366,3 +366,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Local uploads (posters, review media)
+Grogu_backend/uploads/
+uploads/
