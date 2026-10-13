@@ -37,5 +37,30 @@ namespace Grogu.Controllers.V1
                 GroguDb.Int("@GameId", id),
                 GroguDb.Json("@Input", BodyJson(body)));
         }
+
+        /// <summary>
+        /// Adds keys to the game's reward inventory. Body: <c>{ "codes": [...] }</c>.
+        /// Keys are handed out one per approved review, never twice.
+        /// </summary>
+        [HttpPost("{id:int}/keys")]
+        public Task<IActionResult> AddKeys(int id, [FromBody] JsonElement body)
+        {
+            return Db.JsonAsync(
+                "SELECT grogu_game_keys_add(@UserId, @GameId, @Input)",
+                GroguDb.Int("@UserId", CurrentUserId),
+                GroguDb.Int("@GameId", id),
+                GroguDb.Json("@Input", BodyJson(body)));
+        }
+
+        /// <summary>Removes a key that has not been given to a tester yet.</summary>
+        [HttpDelete("{id:int}/keys/{keyId:int}")]
+        public Task<IActionResult> DeleteKey(int id, int keyId)
+        {
+            return Db.JsonAsync(
+                "SELECT grogu_game_key_delete(@UserId, @GameId, @KeyId)",
+                GroguDb.Int("@UserId", CurrentUserId),
+                GroguDb.Int("@GameId", id),
+                GroguDb.Int("@KeyId", keyId));
+        }
     }
 }

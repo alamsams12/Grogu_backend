@@ -41,6 +41,21 @@ namespace Grogu.Controllers.V1
         }
 
         /// <summary>
+        /// Changes how testers get the game (build link, install notes, access key).
+        /// Separate from <see cref="Update"/>, which only edits drafts, so a studio
+        /// can fix a link after publishing.
+        /// </summary>
+        [HttpPatch("{id:int}/access")]
+        public Task<IActionResult> SaveAccess(int id, [FromBody] JsonElement body)
+        {
+            return Db.JsonAsync(
+                "SELECT grogu_playtest_access_save(@UserId, @PlaytestId, @Input)",
+                GroguDb.Int("@UserId", CurrentUserId),
+                GroguDb.Int("@PlaytestId", id),
+                GroguDb.Json("@Input", BodyJson(body)));
+        }
+
+        /// <summary>
         /// Moves a playtest along its lifecycle. The permitted transitions are the
         /// same table the frontend uses in <c>lib/domain.ts</c>, enforced server-side.
         /// </summary>

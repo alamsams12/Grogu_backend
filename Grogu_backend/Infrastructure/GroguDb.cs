@@ -134,6 +134,11 @@ namespace Grogu.Infrastructure
             };
         }
 
+        public static NpgsqlParameter Bool(string name, bool value)
+        {
+            return new NpgsqlParameter(name, NpgsqlDbType.Boolean) { Value = value };
+        }
+
         /// <summary>A request body forwarded to a function's jsonb parameter verbatim.</summary>
         public static NpgsqlParameter Json(string name, string rawJson)
         {
