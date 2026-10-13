@@ -103,7 +103,7 @@ listed above are unchanged and still work.
   (PNG, JPEG, WebP, MP4, WebM; SVG is refused). Posters: developers, images up to
   5 MB. Review media: testers, images up to 10 MB or video up to 50 MB. Avatars:
   anyone signed in, images up to 2 MB. Files are
-  served from `/uploads/<guid>.<ext>`.
+  stored in Cloudinary when configured (returns an `https` URL), otherwise served from `/uploads/<guid>.<ext>`.
 * **Applications (`/api/v1/applications`)** — `POST /{id}/withdraw`, `POST /{id}/decision`
 * **Tests (`/api/v1/tests`)** — `POST /{playtestId}/download`,
   `POST /{playtestId}/tasks/{taskId}/toggle`, `POST /{playtestId}/feedback`
@@ -141,7 +141,8 @@ refuses to start without the ones marked required:
 | `Jwt__Key` | yes in Production | HMAC-SHA256 signing key, **at least 32 characters**. Generate with `openssl rand -base64 48`. In Development a random key is generated per run. |
 | `Jwt__Issuer` | no | Defaults to `grogu-backend`. |
 | `Jwt__Audience` | no | Defaults to `grogu-frontend`. |
-| `Storage__Path` | no | Folder uploaded files are written to and served from. Defaults to `uploads` next to the app. **Use a persistent disk in production**: on an ephemeral filesystem uploads vanish on redeploy. |
+| `CLOUDINARY_URL` | yes in Production | `cloudinary://<api_key>:<api_secret>@<cloud_name>`. When set, uploads go to Cloudinary (folder `grogu`) and the stored URL is the permanent `https` link. Alternatively set `Cloudinary__CloudName`, `Cloudinary__ApiKey` and `Cloudinary__ApiSecret`. When none is set, files go to local disk (`Storage__Path`). **Server-side only**; keep the secret in Render's environment. |
+| `Storage__Path` | no | Local-disk fallback (used only when Cloudinary isn't configured). Folder uploaded files are written to and served from. Defaults to `uploads` next to the app. **Use a persistent disk in production**: on an ephemeral filesystem uploads vanish on redeploy. |
 | `Cors__AllowedOrigins__0`, `__1`, ... | yes for deployed frontends | Browser origins allowed to call the API. `http://localhost:3000` and `:3001` are always allowed. |
 | `Gemini__ApiKey` | no | Google Gemini API key for feedback summaries. **Server-side only**; never put it in a frontend variable. Without it the API runs normally and summaries use the rule-based fallback. |
 | `Gemini__Model` | no | Model id. Defaults to `gemini-3.1-flash-lite`. Google retires model names over time (`gemini-2.5-flash` now returns 404 for new keys), so if summaries stop working with "didn't respond", list the models your key offers and set this. |
