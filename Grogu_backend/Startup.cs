@@ -34,7 +34,16 @@ namespace Grogu_backend
             });
 
             services.AddSingleton<GroguDb>();
-            services.AddSingleton<IFileStore, LocalFileStore>();
+            // Cloudinary when configured (production); local disk otherwise (development).
+            var cloudinary = CloudinaryFileStore.TryCreateClient(Configuration);
+            if (cloudinary != null)
+            {
+                services.AddSingleton<IFileStore>(new CloudinaryFileStore(cloudinary));
+            }
+            else
+            {
+                services.AddSingleton<IFileStore, LocalFileStore>();
+            }
 
             // One shared instance: its rate limits are per process. Without
             // Gemini__ApiKey it is inert and feedback summaries use the SQL fallback.
