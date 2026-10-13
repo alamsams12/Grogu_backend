@@ -24,6 +24,17 @@ This is the minimum operating contract for the production API.
    authenticated user journey after deployment.
 5. Record the deployed Git commit and migration version in the release notes.
 
+Migrations 008 and 009 (review rewards, reputation) must be applied together,
+in order, before the API build that includes `FeedbackV1Controller` and the game
+key endpoints. 008 converts each tester's current reputation into one `baseline`
+event; 009 then grants the profile bonuses existing testers already qualify for,
+without sending notifications. Check afterwards that no tester's
+`players.reputation` differs from the sum of their `reputation_events`.
+
+Migration 011 (matching) must be applied before the API build that includes
+`MatchingV1Controller`. It uses no new settings: matching shares the Gemini key
+and limits with the summaries, and works without a key.
+
 Do not run database migrations automatically in the application container.
 They can be destructive or long-running, and a deploy may start more than one
 instance. Automate migrations later through a single, manually approved job.
@@ -37,6 +48,15 @@ instance. Automate migrations later through a single, manually approved job.
   further numbered variables only for intentional additional origins.
 - Rotate the Neon credential mentioned in the repository README: it was
   previously committed to history.
+- Gemini (feedback summaries): set `Gemini__ApiKey` as a secret environment
+  variable on the API service only. It is optional; without it the API runs
+  normally and studios see rule-based summaries. Apply migration 010 before the
+  API build that includes `InsightsV1Controller`. The default model
+  (`gemini-3.1-flash-lite`) is a setting, `Gemini__Model`. Google retires model
+  names, so confirm the model is offered to the key before relying on it. The call limits (`Gemini__CooldownSeconds`,
+  `Gemini__MaxCallsPerMinute`) are per API instance, so scaling to several
+  instances multiplies the effective rate. Review text (no names, emails or ids)
+  is sent to Google, so mention that in any privacy notice.
 - Keep `NEXT_PUBLIC_API_BASE_URL` public. It is intentionally sent to browsers;
   never put a database URL, JWT signing key, or service-role key in a
   `NEXT_PUBLIC_*` variable.
