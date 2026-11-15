@@ -1,4 +1,6 @@
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Grogu.Infrastructure;
@@ -19,10 +21,17 @@ namespace Grogu.Controllers.V1
     public class AuthV1Controller : ApiControllerBase
     {
         private readonly JwtTokenService _jwt;
+        private readonly EmailSender _email;
+        private readonly AbuseGuard _guard;
+        private readonly SessionRevocation _revocation;
 
-        public AuthV1Controller(GroguDb db, JwtTokenService jwt) : base(db)
+        public AuthV1Controller(GroguDb db, JwtTokenService jwt, EmailSender email, AbuseGuard guard,
+            SessionRevocation revocation) : base(db)
         {
             _jwt = jwt;
+            _email = email;
+            _guard = guard;
+            _revocation = revocation;
         }
 
         [HttpPost("signup")]
@@ -98,6 +107,115 @@ namespace Grogu.Controllers.V1
         public IActionResult Logout()
         {
             return Ok(new { message = "Signed out." });
+        }
+
+        /// <summary>
+        /// Starts a password reset. Body: <c>{ email }</c>. Always answers the same
+        /// way, whether or not the address has an account, and sends the email in
+        /// the background so the response time doesn't tell either.
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] JsonElement body)
+        {
+            var email = StringField(body, "email");
+            if (string.IsNullOrWhiteSpace(email) || email.Length > 254 || !email.Contains("@"))
+            {
+                return GroguDb.Error(400, "validation", "Enter the email address you signed up with.");
+            }
+
+            var token = NewToken();
+            var result = await Db.QueryJsonAsync(
+                "SELECT grogu_password_reset_request(@Email, @Hash, @IpHash)",
+                GroguDb.Text("@Email", email.Trim()),
+                GroguDb.Text("@Hash", Sha256Hex(token)),
+                GroguDb.Text("@IpHash", _guard.ClientHash(HttpContext)));
+
+            if (result.Error == null)
+            {
+                using (var doc = JsonDocument.Parse(result.Json))
+                {
+                    var root = doc.RootElement;
+                    if (root.GetProperty("send").GetBoolean())
+                    {
+                        var to = root.GetProperty("email").GetString();
+                        var name = root.GetProperty("name").GetString();
+                        var link = _email.FrontendUrl + "/reset-password?token=" + token;
+                        // Not awaited: see the summary. SendAsync never throws.
+                        _ = _email.SendPasswordResetAsync(to, name, link);
+                    }
+                }
+            }
+
+            return Ok(new
+            {
+                message = "If an account uses that email, we've sent a link to reset the password. It works for 30 minutes."
+            });
+        }
+
+        /// <summary>Finishes a reset. Body: <c>{ token, password }</c>. Signs out every other session.</summary>
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] JsonElement body)
+        {
+            var token = StringField(body, "token");
+            var password = body.ValueKind == JsonValueKind.Object && body.TryGetProperty("password", out var p)
+                           && p.ValueKind == JsonValueKind.String ? p.GetString() : null;
+
+            if (string.IsNullOrEmpty(token) || token.Length > 128)
+            {
+                return GroguDb.Error(400, "validation", "This reset link is invalid or has expired. Ask for a new one.");
+            }
+
+            var result = await Db.QueryJsonAsync(
+                "SELECT grogu_password_reset_complete(@Hash, @Password)",
+                GroguDb.Text("@Hash", Sha256Hex(token)),
+                GroguDb.Text("@Password", password ?? string.Empty));
+            if (result.Error != null)
+            {
+                return result.Error;
+            }
+
+            using (var doc = JsonDocument.Parse(result.Json))
+            {
+                _revocation.Forget(doc.RootElement.GetProperty("userId").GetInt32());
+            }
+
+            return Ok(new { message = "Your password has been changed. Sign in with the new one." });
+        }
+
+        private static string StringField(JsonElement body, string name)
+        {
+            JsonElement value;
+            return body.ValueKind == JsonValueKind.Object && body.TryGetProperty(name, out value)
+                   && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        }
+
+        /// <summary>32 random bytes, URL-safe base64 (43 characters).</summary>
+        private static string NewToken()
+        {
+            var bytes = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(bytes);
+            }
+            return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        }
+
+        private static string Sha256Hex(string value)
+        {
+            using (var sha = SHA256.Create())
+            {
+                var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(value));
+                var sb = new StringBuilder(64);
+                foreach (var b in hash)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+                return sb.ToString();
+            }
         }
 
         /// <summary>Wraps a user document from the database in a signed session.</summary>

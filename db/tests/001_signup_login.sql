@@ -9,7 +9,7 @@ DECLARE
   u jsonb;
   hash text;
 BEGIN
-  u := grogu_signup('{"role":"tester","name":"Test Tester","email":"t1@test.invalid","password":"secret1","experienceLevel":"regular","platforms":["pc"],"preferredGenres":["rpg"]}');
+  u := grogu_signup('{"role":"tester","name":"Test Tester","email":"t1@test.invalid","password":"secret123","experienceLevel":"regular","platforms":["pc"],"preferredGenres":["rpg"]}');
   PERFORM pg_temp.assert(u ->> 'role' = 'tester', 'signup returns the tester role');
   PERFORM pg_temp.assert(u ->> 'email' = 't1@test.invalid', 'viewer sees their own email');
 
@@ -18,13 +18,13 @@ BEGIN
   PERFORM pg_temp.assert(EXISTS (SELECT 1 FROM players p JOIN users x ON x.id = p.user_id WHERE x.email = 't1@test.invalid'),
                          'signup creates the players row');
 
-  u := grogu_signup('{"role":"developer","name":"Test Dev","email":"d1@test.invalid","password":"secret1","studioName":"Test Studio","studioSize":"small"}');
+  u := grogu_signup('{"role":"developer","name":"Test Dev","email":"d1@test.invalid","password":"secret123","studioName":"Test Studio","studioSize":"small"}');
   PERFORM pg_temp.assert(EXISTS (SELECT 1 FROM studios s JOIN users x ON x.id = s.user_id WHERE x.email = 'd1@test.invalid' AND s.name = 'Test Studio'),
                          'signup creates the studios row with the studio name');
 
   -- duplicate email -> GR003 (conflict)
   BEGIN
-    PERFORM grogu_signup('{"role":"tester","name":"Again","email":"T1@test.invalid","password":"secret1"}');
+    PERFORM grogu_signup('{"role":"tester","name":"Again","email":"T1@test.invalid","password":"secret123"}');
     RAISE EXCEPTION 'FAIL: duplicate email was accepted';
   EXCEPTION WHEN SQLSTATE 'GR003' THEN NULL; END;
 
@@ -33,9 +33,13 @@ BEGIN
     PERFORM grogu_signup('{"role":"tester","name":"Short","email":"s@test.invalid","password":"123"}');
     RAISE EXCEPTION 'FAIL: short password was accepted';
   EXCEPTION WHEN SQLSTATE 'GR005' THEN NULL; END;
+  BEGIN
+    PERFORM grogu_signup('{"role":"tester","name":"Seven","email":"seven@test.invalid","password":"1234567"}');
+    RAISE EXCEPTION 'FAIL: a 7-character password was accepted';
+  EXCEPTION WHEN SQLSTATE 'GR005' THEN NULL; END;
 
   -- login: right password works, wrong one is rejected
-  PERFORM pg_temp.assert(grogu_login('t1@test.invalid', 'secret1') ->> 'role' = 'tester', 'login with the right password');
+  PERFORM pg_temp.assert(grogu_login('t1@test.invalid', 'secret123') ->> 'role' = 'tester', 'login with the right password');
   BEGIN
     PERFORM grogu_login('t1@test.invalid', 'wrong');
     RAISE EXCEPTION 'FAIL: wrong password was accepted';

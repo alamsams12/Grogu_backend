@@ -21,12 +21,12 @@ DECLARE
   ratings   jsonb := '{"fun":4,"difficulty":3,"clarity":4,"performance":4,"polish":4}';
   last_id   integer;
 BEGIN
-  dev_id    := (grogu_signup('{"role":"developer","name":"Ins Dev","email":"insdev@test.invalid","password":"secret1","studioName":"Ins Studio"}') ->> 'id')::int;
-  other_dev := (grogu_signup('{"role":"developer","name":"Ins Other","email":"insother@test.invalid","password":"secret1","studioName":"Other"}') ->> 'id')::int;
-  t1 := (grogu_signup('{"role":"tester","name":"Alice Tester","email":"alice.ins@test.invalid","password":"secret1"}') ->> 'id')::int;
-  t2 := (grogu_signup('{"role":"tester","name":"Bob Tester","email":"bob.ins@test.invalid","password":"secret1"}') ->> 'id')::int;
-  t3 := (grogu_signup('{"role":"tester","name":"Cara Tester","email":"cara.ins@test.invalid","password":"secret1"}') ->> 'id')::int;
-  t4 := (grogu_signup('{"role":"tester","name":"Dan Tester","email":"dan.ins@test.invalid","password":"secret1"}') ->> 'id')::int;
+  dev_id    := (grogu_signup('{"role":"developer","name":"Ins Dev","email":"insdev@test.invalid","password":"secret123","studioName":"Ins Studio"}') ->> 'id')::int;
+  other_dev := (grogu_signup('{"role":"developer","name":"Ins Other","email":"insother@test.invalid","password":"secret123","studioName":"Other"}') ->> 'id')::int;
+  t1 := (grogu_signup('{"role":"tester","name":"Alice Tester","email":"alice.ins@test.invalid","password":"secret123"}') ->> 'id')::int;
+  t2 := (grogu_signup('{"role":"tester","name":"Bob Tester","email":"bob.ins@test.invalid","password":"secret123"}') ->> 'id')::int;
+  t3 := (grogu_signup('{"role":"tester","name":"Cara Tester","email":"cara.ins@test.invalid","password":"secret123"}') ->> 'id')::int;
+  t4 := (grogu_signup('{"role":"tester","name":"Dan Tester","email":"dan.ins@test.invalid","password":"secret123"}') ->> 'id')::int;
 
   game := grogu_game_save(dev_id, NULL, '{"title":"Insight Game","genres":["puzzle"],"platforms":["pc"]}');
   pt_id := (grogu_playtest_save(dev_id, NULL, jsonb_build_object(

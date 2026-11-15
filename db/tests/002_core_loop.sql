@@ -19,9 +19,9 @@ DECLARE
   task_id   integer;
   fb        jsonb;
 BEGIN
-  dev_id    := (grogu_signup('{"role":"developer","name":"Loop Dev","email":"loopdev@test.invalid","password":"secret1","studioName":"Loop Studio"}') ->> 'id')::int;
-  tester_id := (grogu_signup('{"role":"tester","name":"Loop Tester","email":"looptester@test.invalid","password":"secret1"}') ->> 'id')::int;
-  other_id  := (grogu_signup('{"role":"tester","name":"Other Tester","email":"other@test.invalid","password":"secret1"}') ->> 'id')::int;
+  dev_id    := (grogu_signup('{"role":"developer","name":"Loop Dev","email":"loopdev@test.invalid","password":"secret123","studioName":"Loop Studio"}') ->> 'id')::int;
+  tester_id := (grogu_signup('{"role":"tester","name":"Loop Tester","email":"looptester@test.invalid","password":"secret123"}') ->> 'id')::int;
+  other_id  := (grogu_signup('{"role":"tester","name":"Other Tester","email":"other@test.invalid","password":"secret123"}') ->> 'id')::int;
 
   game := grogu_game_save(dev_id, NULL, '{"title":"Loop Game","genres":["puzzle"],"platforms":["pc"],"status":"beta"}');
   PERFORM pg_temp.assert(game ->> 'title' = 'Loop Game', 'game is created');

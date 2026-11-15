@@ -41,6 +41,15 @@ BEGIN
                   FROM generate_series(1, 8) i)));
   END LOOP;
 
+  -- Reward pools: cash rewards are paid from a playtest's pool (migration 014).
+  -- Dev data is funded with an 'adjustment' entry instead of a real payment.
+  INSERT INTO reward_pool_entries (playtest_id, amount, kind, note)
+  SELECT p.id, CASE WHEN p.title LIKE 'Tidepool Keeper%' THEN 1000 ELSE 20000 END, 'adjustment', 'Dev seed funding'
+    FROM playtests p
+   WHERE (p.title IN ('The Long Harbour: accessibility pass', 'Saltmarsh: narrative branch review')
+          OR p.title LIKE 'Tidepool Keeper%')
+     AND NOT EXISTS (SELECT 1 FROM reward_pool_entries e WHERE e.playtest_id = p.id);
+
   -- Long Harbour accessibility pass: approve all but the last review, reject it.
   n := 0;
   FOR f IN

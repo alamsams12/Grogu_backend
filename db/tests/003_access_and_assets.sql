@@ -26,11 +26,11 @@ DECLARE
   doc        jsonb;
   fb         jsonb;
 BEGIN
-  dev_id    := (grogu_signup('{"role":"developer","name":"Own Dev","email":"own@test.invalid","password":"secret1","studioName":"Own Studio"}') ->> 'id')::int;
-  other_dev := (grogu_signup('{"role":"developer","name":"Other Dev","email":"otherdev@test.invalid","password":"secret1","studioName":"Other Studio"}') ->> 'id')::int;
-  accepted  := (grogu_signup('{"role":"tester","name":"Accepted","email":"acc@test.invalid","password":"secret1"}') ->> 'id')::int;
-  pending   := (grogu_signup('{"role":"tester","name":"Pending","email":"pend@test.invalid","password":"secret1"}') ->> 'id')::int;
-  stranger  := (grogu_signup('{"role":"tester","name":"Stranger","email":"str@test.invalid","password":"secret1"}') ->> 'id')::int;
+  dev_id    := (grogu_signup('{"role":"developer","name":"Own Dev","email":"own@test.invalid","password":"secret123","studioName":"Own Studio"}') ->> 'id')::int;
+  other_dev := (grogu_signup('{"role":"developer","name":"Other Dev","email":"otherdev@test.invalid","password":"secret123","studioName":"Other Studio"}') ->> 'id')::int;
+  accepted  := (grogu_signup('{"role":"tester","name":"Accepted","email":"acc@test.invalid","password":"secret123"}') ->> 'id')::int;
+  pending   := (grogu_signup('{"role":"tester","name":"Pending","email":"pend@test.invalid","password":"secret123"}') ->> 'id')::int;
+  stranger  := (grogu_signup('{"role":"tester","name":"Stranger","email":"str@test.invalid","password":"secret123"}') ->> 'id')::int;
 
   -- Posters: uploads and https are accepted; script and data URLs are not.
   game := grogu_game_save(dev_id, NULL, '{"title":"Poster Game","coverImageUrl":"/uploads/abc123.png"}');

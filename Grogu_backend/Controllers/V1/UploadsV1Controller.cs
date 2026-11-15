@@ -35,7 +35,10 @@ namespace Grogu.Controllers.V1
         {
             { "poster",       new Policy { Role = "developer", ImageLimit = 5 * MB,  VideoLimit = 0 } },
             { "review-media", new Policy { Role = "tester",    ImageLimit = 10 * MB, VideoLimit = 50 * MB } },
-            { "avatar",       new Policy { Role = null,        ImageLimit = 2 * MB,  VideoLimit = 0 } }
+            { "avatar",       new Policy { Role = null,        ImageLimit = 2 * MB,  VideoLimit = 0 } },
+            // Screenshots on a bug report filed from a game's public page. Any
+            // signed-in user; anonymous reports carry no attachments.
+            { "bug-media",    new Policy { Role = null,        ImageLimit = 10 * MB, VideoLimit = 0 } }
         };
 
         private readonly IFileStore _files;
