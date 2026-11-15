@@ -39,6 +39,19 @@ namespace Grogu.Controllers.V1
         }
 
         /// <summary>
+        /// The studio's bug inbox for one game: every report filed from the game's
+        /// public page, newest first, with the reporter's contact details.
+        /// </summary>
+        [HttpGet("{id:int}/bugs")]
+        public Task<IActionResult> Bugs(int id)
+        {
+            return Db.JsonAsync(
+                "SELECT grogu_game_bugs(@UserId, @GameId)",
+                GroguDb.Int("@UserId", CurrentUserId),
+                GroguDb.Int("@GameId", id));
+        }
+
+        /// <summary>
         /// Adds keys to the game's reward inventory. Body: <c>{ "codes": [...] }</c>.
         /// Keys are handed out one per approved review, never twice.
         /// </summary>

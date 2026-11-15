@@ -49,6 +49,19 @@ namespace Grogu_backend
             // Gemini__ApiKey it is inert and feedback summaries use the SQL fallback.
             services.AddSingleton<GeminiClient>();
 
+            // Reward-pool payments. Without Razorpay__KeyId/KeySecret the payment
+            // endpoints answer 503 and the rest of the API is unaffected.
+            services.AddSingleton<RazorpayClient>();
+
+            // Rate-limit hashing and the optional Turnstile check for anonymous
+            // bug reports and reviews on public game pages.
+            services.AddSingleton<AbuseGuard>();
+
+            // Password reset: emails the link (Resend when configured) and rejects
+            // sessions issued before the latest password change.
+            services.AddSingleton<EmailSender>();
+            services.AddSingleton<SessionRevocation>();
+
             // Constructed eagerly so a missing or too-short Jwt__Key fails at
             // startup rather than on the first login attempt.
             var jwt = new JwtTokenService(Configuration, Environment.IsDevelopment());
@@ -60,6 +73,26 @@ namespace Grogu_backend
                 {
                     options.TokenValidationParameters = jwt.ValidationParameters;
                     options.RequireHttpsMetadata = !Environment.IsDevelopment();
+
+                    // A password reset signs out every session issued before it.
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = async context =>
+                        {
+                            var sub = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                            int userId;
+                            if (sub == null || !int.TryParse(sub, out userId))
+                            {
+                                return;
+                            }
+
+                            var revocation = context.HttpContext.RequestServices.GetRequiredService<SessionRevocation>();
+                            if (!await revocation.IsCurrentAsync(userId, context.SecurityToken.ValidFrom))
+                            {
+                                context.Fail("Session ended by a password change.");
+                            }
+                        }
+                    };
                 });
 
             services.AddCors(options =>

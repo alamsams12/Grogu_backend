@@ -35,6 +35,14 @@ Migration 011 (matching) must be applied before the API build that includes
 `MatchingV1Controller`. It uses no new settings: matching shares the Gemini key
 and limits with the summaries, and works without a key.
 
+Migrations 013–015 (public game pages, reward pools, password reset) must be
+applied before the API build that includes `PublicGamesV1Controller`,
+`PaymentsV1Controller` and the forgot/reset password endpoints. 014 changes
+review approval: a cash reward now needs enough in the playtest's reward pool,
+so existing playtests with a cash reward must be funded before reviews can be
+approved with cash (approval without cash is unchanged). 015 makes the API
+reject bearer tokens issued before a user's last password change.
+
 Do not run database migrations automatically in the application container.
 They can be destructive or long-running, and a deploy may start more than one
 instance. Automate migrations later through a single, manually approved job.
@@ -60,6 +68,20 @@ instance. Automate migrations later through a single, manually approved job.
 - Keep `NEXT_PUBLIC_API_BASE_URL` public. It is intentionally sent to browsers;
   never put a database URL, JWT signing key, or service-role key in a
   `NEXT_PUBLIC_*` variable.
+
+- Razorpay (reward pools): `Razorpay__KeyId`, `Razorpay__KeySecret` and
+  `Razorpay__WebhookSecret`, all secret except the key id (sent to browsers so
+  Checkout can open). Add the webhook in the Razorpay dashboard at
+  `<api>/api/v1/payments/webhook` with events `payment.captured`, `order.paid`
+  and `payment.failed`. Use `rzp_test_` keys until KYC and a live account are
+  ready. Only the amount stored when the order was created is ever credited.
+- Email (password reset): `Email__ResendApiKey`, `Email__From` (a domain verified
+  in Resend) and `App__FrontendUrl` (links in emails; never taken from the
+  request). Without a key the reset form still answers normally but no email is
+  sent.
+- Anonymous bug reports and reviews are rate-limited per salted IP hash
+  (`Abuse__Salt`, defaulting to the JWT key). Optional Cloudflare Turnstile:
+  `Turnstile__SecretKey` with `NEXT_PUBLIC_TURNSTILE_SITE_KEY` on the frontend.
 
 ## Rollback
 

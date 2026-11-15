@@ -39,11 +39,11 @@ DECLARE
   before    integer;
   ratings   jsonb := '{"fun":4,"difficulty":3,"clarity":4,"performance":4,"polish":4}';
 BEGIN
-  dev_id    := (grogu_signup('{"role":"developer","name":"Rew Dev","email":"rewdev@test.invalid","password":"secret1","studioName":"Rew Studio"}') ->> 'id')::int;
-  other_dev := (grogu_signup('{"role":"developer","name":"Rew Other","email":"rewother@test.invalid","password":"secret1","studioName":"Other"}') ->> 'id')::int;
-  t1 := (grogu_signup('{"role":"tester","name":"Rew One","email":"rew1@test.invalid","password":"secret1"}') ->> 'id')::int;
-  t2 := (grogu_signup('{"role":"tester","name":"Rew Two","email":"rew2@test.invalid","password":"secret1"}') ->> 'id')::int;
-  t3 := (grogu_signup('{"role":"tester","name":"Rew Three","email":"rew3@test.invalid","password":"secret1"}') ->> 'id')::int;
+  dev_id    := (grogu_signup('{"role":"developer","name":"Rew Dev","email":"rewdev@test.invalid","password":"secret123","studioName":"Rew Studio"}') ->> 'id')::int;
+  other_dev := (grogu_signup('{"role":"developer","name":"Rew Other","email":"rewother@test.invalid","password":"secret123","studioName":"Other"}') ->> 'id')::int;
+  t1 := (grogu_signup('{"role":"tester","name":"Rew One","email":"rew1@test.invalid","password":"secret123"}') ->> 'id')::int;
+  t2 := (grogu_signup('{"role":"tester","name":"Rew Two","email":"rew2@test.invalid","password":"secret123"}') ->> 'id')::int;
+  t3 := (grogu_signup('{"role":"tester","name":"Rew Three","email":"rew3@test.invalid","password":"secret123"}') ->> 'id')::int;
 
   PERFORM pg_temp.assert(pg_temp.rep(t1) = 0, 'a new tester starts at 0 reputation');
   PERFORM pg_temp.assert((grogu_tester_profile_json((SELECT pl FROM players pl WHERE user_id = t1)) ->> 'level')::int = 1,
@@ -55,6 +55,11 @@ BEGIN
     'gameId', game_id, 'title', 'Reward playtest', 'maxTesters', 5, 'publish', true, 'cashReward', 300,
     'tasks', '[{"title":"Play","type":"objective","required":true}]'::jsonb));
   pt_id := (pt ->> 'id')::int;
+
+  -- Fund the reward pool through the payment path (prepare -> attach -> capture).
+  res := grogu_payment_order_prepare(dev_id, jsonb_build_object('playtestId', pt_id::text, 'amount', 400));
+  PERFORM grogu_payment_order_attach(dev_id, (res ->> 'id')::int, 'order_rew_test');
+  PERFORM grogu_payment_capture(dev_id, 'order_rew_test', 'pay_rew_test', NULL);
 
   /* ---- Participation ------------------------------------------------ */
   FOREACH before IN ARRAY ARRAY[t1, t2, t3] LOOP

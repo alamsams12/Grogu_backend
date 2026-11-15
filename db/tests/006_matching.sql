@@ -15,7 +15,7 @@ CREATE FUNCTION pg_temp.tester(name text, profile jsonb, rep integer) RETURNS in
 DECLARE uid integer;
 BEGIN
   uid := (grogu_signup(jsonb_build_object('role', 'tester', 'name', name,
-            'email', lower(replace(name, ' ', '.')) || '@match.test.invalid', 'password', 'secret1') || profile) ->> 'id')::int;
+            'email', lower(replace(name, ' ', '.')) || '@match.test.invalid', 'password', 'secret123') || profile) ->> 'id')::int;
   PERFORM set_config('grogu.quiet', 'on', true);
   PERFORM grogu_reputation_award(uid, 'baseline', 'match-test', rep);
   PERFORM set_config('grogu.quiet', 'off', true);
@@ -46,8 +46,8 @@ DECLARE
   first_id text;
   i        integer;
 BEGIN
-  dev   := (grogu_signup('{"role":"developer","name":"Match Dev","email":"matchdev@test.invalid","password":"secret1","studioName":"Match Studio"}') ->> 'id')::int;
-  other := (grogu_signup('{"role":"developer","name":"Match Other","email":"matchother@test.invalid","password":"secret1","studioName":"Other Studio"}') ->> 'id')::int;
+  dev   := (grogu_signup('{"role":"developer","name":"Match Dev","email":"matchdev@test.invalid","password":"secret123","studioName":"Match Studio"}') ->> 'id')::int;
+  other := (grogu_signup('{"role":"developer","name":"Match Other","email":"matchother@test.invalid","password":"secret123","studioName":"Other Studio"}') ->> 'id')::int;
 
   game := grogu_game_save(dev, NULL, '{"title":"Match Game","genres":["strategy","rpg"],"platforms":["pc"]}');
 
